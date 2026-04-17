@@ -17,7 +17,7 @@
 #   Results are written to a CSV report file and also printed to the console.
 #
 # @usage      python src/analyze_data.py doc/2015.csv
-# @version    1.0
+# @version    1.1
 ##
 
 import argparse
@@ -36,9 +36,10 @@ REQUIRED_COLUMNS = {
 }
 
 ##
-# @brief Rankings considered 'Meritorious or better', from best to lowest.
+# @brief Rankings considered 'Meritorious or better', casefolded for
+#        case-insensitive membership checks.
 ##
-MERITORIOUS_OR_BETTER = {"Meritorious", "Finalist", "Outstanding Winner"}
+MERITORIOUS_OR_BETTER = {r.casefold() for r in {"Meritorious", "Finalist", "Outstanding Winner"}}
 
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
@@ -229,7 +230,7 @@ def teams_per_institution(rows: list[dict]) -> list[tuple[str, int]]:
 def outstanding_institutions(rows: list[dict]) -> list[str]:
     """
     @brief  Returns a sorted list of institution names whose team(s) earned
-            an 'Outstanding Winner' ranking.
+            an 'Outstanding Winner' ranking (case-insensitive).
 
     @param  rows  List of row dicts from the CSV.
     @return A sorted list of unique institution name strings.
@@ -237,7 +238,7 @@ def outstanding_institutions(rows: list[dict]) -> list[str]:
     inst_set = {
         row["Institution"]
         for row in rows
-        if row["Ranking"] == "Outstanding Winner"
+        if row["Ranking"].casefold() == "outstanding winner"
     }
 
     return sorted(inst_set)
@@ -245,7 +246,8 @@ def outstanding_institutions(rows: list[dict]) -> list[str]:
 
 def us_meritorious_or_better(rows: list[dict]) -> list[dict]:
     """
-    @brief  Returns all US teams that received a 'Meritorious' ranking or better.
+    @brief  Returns all US teams that received a 'Meritorious' ranking or better
+            (case-insensitive for both Country and Ranking fields).
 
     @details
         'Meritorious or better' includes: Meritorious, Finalist, Outstanding Winner.
@@ -256,7 +258,8 @@ def us_meritorious_or_better(rows: list[dict]) -> list[dict]:
     """
     filtered = [
         row for row in rows
-        if row["Country"] == "USA" and row["Ranking"] in MERITORIOUS_OR_BETTER
+        if row["Country"].casefold() == "usa"
+        and row["Ranking"].casefold() in MERITORIOUS_OR_BETTER
     ]
 
     return sorted(filtered, key=lambda x: (x["Institution"], x["Team Number"]))
@@ -419,10 +422,10 @@ def main():
     validate_contents(input_path, rows)
 
     # Step 6: Run all four analyses
-    avg             = average_teams_per_institution(rows)
-    top_inst        = teams_per_institution(rows)
-    outstanding     = outstanding_institutions(rows)
-    us_merit        = us_meritorious_or_better(rows)
+    avg         = average_teams_per_institution(rows)
+    top_inst    = teams_per_institution(rows)
+    outstanding = outstanding_institutions(rows)
+    us_merit    = us_meritorious_or_better(rows)
 
     # Step 7: Print the summary to the console
     print_summary(avg, top_inst, outstanding, us_merit)
